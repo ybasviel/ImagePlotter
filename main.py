@@ -41,7 +41,7 @@ def capture_image(camera_index=0):
         # キー入力を待機
         key = cv2.waitKey(1) & 0xFF
         
-        # 's'キーが押されたら画像を保存
+        # スペースバーが押されたら画像を保存
         if key == 32:
             cap.release()
             cv2.destroyAllWindows()
@@ -185,7 +185,10 @@ if __name__ == "__main__":
     edges = get_edges(image)
 
     cv2.imshow("edge", edges)
-    cv2.waitKey(0)
+    key = cv2.waitKey(1) & 0xFF
+    # cでキャンセル
+    if key == ord("c"):
+        exit()
     cv2.destroyAllWindows()
 
     print("convert edges to vec")
