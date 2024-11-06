@@ -1,0 +1,7 @@
+tqdm
+pyserial
+opencv-python
+matplotlib
+pathlib
+argparse
+urllib
