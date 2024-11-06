@@ -196,6 +196,12 @@ if __name__ == "__main__":
 
     polylines = sort_matrices_by_n(polylines)
 
+    # plot polylines
+    for polyline in polylines:
+        if np.shape(polyline)[0] > polyline_noise_threshold:
+            plt.plot(polyline[:,0], polyline[:,1])
+    plt.show()
+
     if args.serial_port == "":
         dump_to_gcode(args.gcode_path, polylines)
     else:
@@ -204,12 +210,6 @@ if __name__ == "__main__":
         gcode = dump_to_gcode_str(polylines)
         send_gcode_by_serial(ser, gcode)
 
-
-    # plot polylines
-    for polyline in polylines:
-        if np.shape(polyline)[0] > polyline_noise_threshold:
-            plt.plot(polyline[:,0], polyline[:,1])
-    plt.show()
 
 
         
