@@ -4,4 +4,4 @@ opencv-python
 matplotlib
 pathlib
 argparse
-urllib
+urllib3
