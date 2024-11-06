@@ -185,7 +185,7 @@ if __name__ == "__main__":
     edges = get_edges(image)
 
     cv2.imshow("edge", edges)
-    key = cv2.waitKey(1) & 0xFF
+    key = cv2.waitKey(0) & 0xFF
     # cでキャンセル
     if key == ord("c"):
         exit()
