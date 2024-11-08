@@ -3,6 +3,31 @@ import math
 import numpy as np
 
 
+def link_polylines(polylines, linkage_threshold = 2, iterate=1):
+    for _ in range(iterate):
+        for base_index, base_polyline in enumerate(polylines):
+            for index, searched_line in enumerate(polylines):
+                if np.shape(searched_line)[0] == np.shape(base_polyline)[0] and  np.all(searched_line == base_polyline):
+                    # 同一のパスならパス
+                    pass
+                elif np.linalg.norm(searched_line[0,:]- base_polyline[0,:]) < linkage_threshold:
+                    # 始点と始点が近いパターン
+                    polylines[base_index] = np.concatenate((np.flip(base_polyline, 0), searched_line))
+                    polylines.pop(index)
+
+                elif np.linalg.norm(searched_line[-1,:]- base_polyline[-1,:]) < linkage_threshold:
+                    # 終点と終点が近いパターン
+                    polylines[base_index] = np.concatenate((base_polyline, np.flip(searched_line, 0)))
+                    polylines.pop(index)
+
+                elif np.linalg.norm(searched_line[0,:]- base_polyline[-1,:]) < linkage_threshold:
+                    # 終点と始点が近いパターン
+                    polylines[base_index] = np.concatenate((base_polyline, searched_line))
+                    polylines.pop(index)
+
+    return polylines
+
+
 def edges2polylines(edges, th_n=6, th_c=None):
     """
     cv2.Canny()から返されるエッジ検出結果からエッジ点を読みより折れ線に変換する
@@ -79,6 +104,9 @@ def edges2polylines(edges, th_n=6, th_c=None):
             count += 1
             
         polylines.append(polyline)
+
+    polylines = link_polylines(polylines, linkage_threshold=3, iterate=1)
+
     return polylines
 
 

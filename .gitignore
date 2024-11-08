@@ -167,3 +167,5 @@ cython_debug/
 *.svg
 !templates/start.gcode
 !templates/end.gcode
+
+*.json
