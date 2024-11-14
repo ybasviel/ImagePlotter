@@ -168,4 +168,5 @@ cython_debug/
 !templates/start.gcode
 !templates/end.gcode
 
-*.json
+*.json 
+!3dmodel/PenHolder.png
