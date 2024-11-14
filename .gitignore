@@ -167,3 +167,4 @@ cython_debug/
 *.svg
 !templates/start.gcode
 !templates/end.gcode
+!3dmodel/PenHolder.png
