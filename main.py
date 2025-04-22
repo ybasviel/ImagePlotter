@@ -30,14 +30,16 @@ def capture_image(camera_index=0):
 
     while True:
         # フレームを取得
-        ret, frame = cap.read()
+        ret, origin_frame = cap.read()
+
+        frame = crop_image_to_sq(origin_frame)
         
         if not ret:
             print("フレームを取得できませんでした")
             break
         
         # フレームをウィンドウに表示
-        cv2.imshow('Video Preview', frame)
+        cv2.imshow('Video Preview', cv2.flip(frame, 1))
         
         # キー入力を待機
         key = cv2.waitKey(1) & 0xFF
@@ -46,7 +48,7 @@ def capture_image(camera_index=0):
         if key == 32:
             cap.release()
             cv2.destroyAllWindows()
-            return frame
+            return origin_frame
 
 
 
@@ -76,7 +78,7 @@ def map_bedsize(polylines):
     for polyline in polylines:
         mapped_polyline = (polyline - min_val) / (max_val - min_val) * 170
         mapped_polyline[:,0] += 130/2
-        mapped_polyline[:,1] += 250
+        mapped_polyline[:,1] += 270
         mapped_polylines.append(mapped_polyline) # たぶんmax 300mm
 
 
@@ -176,6 +178,7 @@ if __name__ == "__main__":
         image = np.asarray(bytearray(resp.read()), dtype="uint8")
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
     else:
+        print("spaceで撮影")
         #なにも指定がないときはカメラモード
         image = capture_image()
 
@@ -192,9 +195,11 @@ if __name__ == "__main__":
 
     edges = get_edges(image)
 
+    print("cでキャンセル")
+
     cv2.imshow("edge", edges)
     key = cv2.waitKey(0) & 0xFF
-    # cでキャンセル
+
     if key == ord("c"):
         exit()
     cv2.destroyAllWindows()
