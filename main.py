@@ -6,6 +6,7 @@ import time
 from edges_to_vec import edges2polylines
 from pathlib import Path
 import tqdm
+import comfyui_api
 
 def sort_matrices_by_n(matrices_list):
     """
@@ -161,6 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("-u", "--input-url", dest="url", type=str, help="input img file url", default="")
     parser.add_argument("-o", "--output-gcode-path", dest="gcode_path", type=Path, help="gcode save path", default="output.gcode")
     parser.add_argument("-s", "--serial-port", dest="serial_port", type=str, help="gcode send serial port", default="")
+    parser.add_argument("--comfy", dest="comfy", type=str, help="comfyui url", default="")
     args = parser.parse_args()
 
     polyline_noise_threshold = 10
@@ -178,6 +180,12 @@ if __name__ == "__main__":
         image = capture_image()
 
     image = crop_image_to_sq(image)
+
+    if args.comfy != "":
+        cv2.imwrite("tmp/raw.png", image)
+        image = comfyui_api.queue("tmp/raw.png", args.comfy)
+        Path("tmp/raw.png").unlink()
+    
     image = resize_image_to_640(image)
 
     cv2.imshow("original", image)

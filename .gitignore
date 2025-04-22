@@ -167,6 +167,7 @@ cython_debug/
 *.svg
 !templates/start.gcode
 !templates/end.gcode
+!templates/i2i_face_api.json
 
 *.json 
 !3dmodel/PenHolder.png
