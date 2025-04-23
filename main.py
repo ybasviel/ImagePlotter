@@ -6,6 +6,7 @@ import time
 from edges_to_vec import edges2polylines
 from pathlib import Path
 import tqdm
+import mediapipe as mp
 
 def sort_matrices_by_n(matrices_list):
     """
@@ -153,6 +154,33 @@ def send_gcode_by_serial(ser, codes):
                 if ser.readline().startswith(b'ok'):
                     break
 
+def remove_background(image):
+    # MediaPipeのSelfieSegmentationモデルを初期化
+    mp_selfie_segmentation = mp.solutions.selfie_segmentation
+    selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(
+        model_selection=1  # 1: 高精度モード
+    )
+
+    # 画像をRGBに変換
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    # セグメンテーションを実行
+    results = selfie_segmentation.process(rgb_image)
+    
+    # セグメンテーションマスクを取得
+    condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > 0.5
+    
+    # 背景を黒に設定
+    bg_image = np.zeros_like(image)
+    
+    # マスクを適用
+    result = np.where(condition, image, bg_image)
+    
+    # リソースを解放
+    selfie_segmentation.close()
+    
+    return result
+
 if __name__ == "__main__":
     import argparse
     from urllib.request import urlopen
@@ -181,6 +209,9 @@ if __name__ == "__main__":
         image = capture_image()
 
     image = crop_image_to_sq(image)
+
+    image = remove_background(image)
+
     image = resize_image_to_640(image)
 
     cv2.imshow("original", image)
