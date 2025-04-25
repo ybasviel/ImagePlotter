@@ -3,7 +3,7 @@ import base64
 import cv2
 import os
 
-def queue(image_path:str, base_url = "http://127.0.0.1:8188/"):
+def queue(image_path:str, base_url = "http://127.0.0.1:8188/", workflow_path:str = "templates/i2i_face_api.json"):
 
     with open(image_path, 'rb') as f:
         data = f.read()
@@ -11,7 +11,7 @@ def queue(image_path:str, base_url = "http://127.0.0.1:8188/"):
 
     api = ComfyApiWrapper(base_url)
 
-    wf = ComfyWorkflowWrapper("templates/i2i_face_api.json")
+    wf = ComfyWorkflowWrapper(workflow_path)
 
     wf.set_node_param("Load Image (Base64)", "image",  base64_img.decode() )
 

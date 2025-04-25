@@ -193,6 +193,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output-gcode-path", dest="gcode_path", type=Path, help="gcode save path", default="output.gcode")
     parser.add_argument("-s", "--serial-port", dest="serial_port", type=str, help="gcode send serial port", default="")
     parser.add_argument("--comfy", dest="comfy", type=str, help="comfyui url", default="")
+    parser.add_argument("--workflow", dest="workflow", type=str, help="comfyui workflow path", default="templates/i2i_face_api.json")
     args = parser.parse_args()
 
     polyline_noise_threshold = 10
@@ -217,7 +218,7 @@ if __name__ == "__main__":
 
     if args.comfy != "":
         cv2.imwrite("tmp/raw.png", image)
-        image = comfyui_api.queue("tmp/raw.png", args.comfy)
+        image = comfyui_api.queue("tmp/raw.png", args.comfy, args.workflow)
         Path("tmp/raw.png").unlink()
     
     image = resize_image_to_640(image)
