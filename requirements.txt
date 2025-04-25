@@ -6,3 +6,4 @@ pathlib
 argparse
 urllib3
 comfy_api_simplified
+mediapipe
