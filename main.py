@@ -57,7 +57,7 @@ def capture_image(camera_index=0):
 def get_edges(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(gray, 70, 100)
+    edges = cv2.Canny(gray, 50, 100)
 
     return edges
 
