@@ -87,7 +87,7 @@ def map_bedsize(polylines):
 
 def dump_to_gcode_str(polylines):
     moving_z = 50
-    writing_z = 40
+    writing_z = 47
     
     with open("templates/start.gcode", "r") as f:
         start_gcode = f.read()
@@ -99,18 +99,18 @@ def dump_to_gcode_str(polylines):
     gcode += start_gcode
     gcode += f"E0;\n"
 
-    gcode += f"G1 Z{moving_z} F240\n"
+    gcode += f"G1 Z{moving_z} F2000\n"
 
     for polyline in polylines:
         if np.shape(polyline)[0] > polyline_noise_threshold:
-            gcode += "G1 F7200\n"
+            gcode += "G1 F15000\n"
             gcode += f"G1 X{polyline[0][0]} Y{polyline[0][1]} Z{moving_z};\n"
-            gcode += f"G1 Z{writing_z} F2400;\n"
+            gcode += f"G1 Z{writing_z} F10000;\n"
             for coord in polyline:    
                 gcode += f"G1 X{coord[0]} Y{coord[1]};\n"
             gcode += f"G1 X{polyline[-1][0]} Y{polyline[-1][1]} Z{moving_z};\n"
 
-    gcode += f"G1 Z{moving_z} F240;\n"
+    gcode += f"G1 Z{moving_z} F2000;\n"
 
     gcode += end_gcode
 
@@ -194,6 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--serial-port", dest="serial_port", type=str, help="gcode send serial port", default="")
     parser.add_argument("--comfy", dest="comfy", type=str, help="comfyui url", default="")
     parser.add_argument("--workflow", dest="workflow", type=str, help="comfyui workflow path", default="templates/i2i_face_api.json")
+    parser.add_argument("--camera-id", dest="camera_id", type=int, help="camera id", default=0)
     args = parser.parse_args()
 
     polyline_noise_threshold = 10
@@ -209,7 +210,7 @@ if __name__ == "__main__":
     else:
         print("spaceで撮影")
         #なにも指定がないときはカメラモード
-        image = capture_image()
+        image = capture_image(args.camera_id)
 
     image = crop_image_to_sq(image)
 
@@ -217,6 +218,7 @@ if __name__ == "__main__":
 
 
     if args.comfy != "":
+        cv2.imshow("cropped original", image)
         cv2.imwrite("tmp/raw.png", image)
         image = comfyui_api.queue("tmp/raw.png", args.comfy, args.workflow)
         Path("tmp/raw.png").unlink()
