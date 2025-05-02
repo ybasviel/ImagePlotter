@@ -8,179 +8,8 @@ from pathlib import Path
 import tqdm
 import mediapipe as mp
 import comfyui_api
+from utils import douglas_peucker, map_bedsize, sort_matrices_by_n, crop_image_to_sq, remove_background, resize_image_to_640, get_edges, capture_image, dump_to_gcode, dump_to_gcode_str, send_gcode_by_serial
 
-def sort_matrices_by_n(matrices_list):
-    """
-    2xnのNumPy行列を含むリストをnの小さい順に並べ替える。
-
-    Parameters:
-    matrices_list (list of numpy.ndarray): 2xnのNumPy行列を含むリスト
-
-    Returns:
-    list of numpy.ndarray: nの小さい順に並べ替えられた行列を持つリスト
-    """
-    if not all(isinstance(matrix, np.ndarray) and matrix.shape[1] == 2 for matrix in matrices_list):
-        raise ValueError("All elements in the list must be 2xn numpy arrays.")
-    
-    # n, i.e., the number of columns, is determined by the second dimension of the shape
-    sorted_list = sorted(matrices_list, key=lambda x: x.shape[0])
-    return sorted_list
-
-def capture_image(camera_index=0):
-    cap = cv2.VideoCapture(camera_index)
-
-    while True:
-        # フレームを取得
-        ret, origin_frame = cap.read()
-
-        frame = crop_image_to_sq(origin_frame)
-        
-        if not ret:
-            print("フレームを取得できませんでした")
-            break
-        
-        # フレームをウィンドウに表示
-        cv2.imshow('Video Preview', cv2.flip(frame, 1))
-        
-        # キー入力を待機
-        key = cv2.waitKey(1) & 0xFF
-        
-        # スペースバーが押されたら画像を保存
-        if key == 32:
-            cap.release()
-            cv2.destroyAllWindows()
-            return origin_frame
-
-
-
-
-def get_edges(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(gray, 50, 100)
-
-    return edges
-
-def resize_image_to_640(image):
-    (h, w) = image.shape[:2]
-
-    # 横幅を640に変更し、縦横比を維持するための高さを計算
-    new_width = 640
-    aspect_ratio = new_width / float(w)
-    new_height = int(h * aspect_ratio)
-
-    return cv2.resize(image, (new_width, new_height))
-
-def map_bedsize(polylines):
-    min_val = 0
-    max_val = 640
-
-    mapped_polylines = []
-    for polyline in polylines:
-        mapped_polyline = (polyline - min_val) / (max_val - min_val) * 170
-        mapped_polyline[:,0] += 130/2
-        mapped_polyline[:,1] += 270
-        mapped_polylines.append(mapped_polyline) # たぶんmax 300mm
-
-
-    return mapped_polylines
-
-def dump_to_gcode_str(polylines):
-    moving_z = 50
-    writing_z = 47
-    
-    with open("templates/start.gcode", "r") as f:
-        start_gcode = f.read()
-
-    with open("templates/end.gcode", "r") as f:
-        end_gcode = f.read()
-
-    gcode = ""
-    gcode += start_gcode
-    gcode += f"E0;\n"
-
-    gcode += f"G1 Z{moving_z} F2000\n"
-
-    for polyline in polylines:
-        if np.shape(polyline)[0] > polyline_noise_threshold:
-            gcode += "G1 F15000\n"
-            gcode += f"G1 X{polyline[0][0]} Y{polyline[0][1]} Z{moving_z};\n"
-            gcode += f"G1 Z{writing_z} F10000;\n"
-            for coord in polyline:    
-                gcode += f"G1 X{coord[0]} Y{coord[1]};\n"
-            gcode += f"G1 X{polyline[-1][0]} Y{polyline[-1][1]} Z{moving_z};\n"
-
-    gcode += f"G1 Z{moving_z} F2000;\n"
-
-    gcode += end_gcode
-
-    return gcode
-
-def dump_to_gcode(filename:Path|str, polylines):
-
-    gcode = dump_to_gcode_str(polylines)
-    with open(filename, "w") as f:
-        f.write(gcode)
-
-
-def crop_image_to_sq(image):
-    # 画像のサイズを取得
-    height, width = image.shape[:2]
-
-    # 中央の正方形を切り出す範囲を計算
-    x_start = (width - height) // 2
-    y_start = 0
-    x_end = x_start + height
-    y_end = y_start + height
-
-    # 中央の正方形を切り出す
-    return image[y_start:y_end, x_start:x_end]
-
-def send_gcode_by_serial(ser, codes):
-    codes = codes.split("\n")
-
-    ser.write(b"\r\n\r\n") # Wake up microcontroller
-    time.sleep(3)
-    ser.reset_input_buffer()
-
-    tqdm4codes = tqdm.tqdm(codes, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}', unit=" codes", ncols=130)
-    for code in tqdm4codes:
-        tqdm4codes.set_postfix(gcode=code) # Show gcode at postfix
-        if code.strip().startswith(';') or code.isspace() or len(code) <=0:
-            continue
-        else:
-            ser.write((code+'\n').encode())
-            while(1): # Wait untile the former gcode has been completed.
-
-                if ser.readline().startswith(b'ok'):
-                    break
-
-def remove_background(image):
-    # MediaPipeのSelfieSegmentationモデルを初期化
-    mp_selfie_segmentation = mp.solutions.selfie_segmentation
-    selfie_segmentation = mp_selfie_segmentation.SelfieSegmentation(
-        model_selection=1  # 1: 高精度モード
-    )
-
-    # 画像をRGBに変換
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    
-    # セグメンテーションを実行
-    results = selfie_segmentation.process(rgb_image)
-    
-    # セグメンテーションマスクを取得
-    condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > 0.5
-    
-    # 背景を黒に設定
-    bg_image = np.zeros_like(image)
-    
-    # マスクを適用
-    result = np.where(condition, image, bg_image)
-    
-    # リソースを解放
-    selfie_segmentation.close()
-    
-    return result
 
 if __name__ == "__main__":
     import argparse
@@ -197,7 +26,6 @@ if __name__ == "__main__":
     parser.add_argument("--camera-id", dest="camera_id", type=int, help="camera id", default=0)
     args = parser.parse_args()
 
-    polyline_noise_threshold = 10
 
     if args.input_file_path != "":
         image = cv2.imread(args.input_file_path)
@@ -246,14 +74,26 @@ if __name__ == "__main__":
 
     polylines = sort_matrices_by_n(polylines)
 
-    # plot polylines
+    # ダウンサンプリング
+    print("downsampling")
+    epsilon = 0.3
+    downsampled_polylines = []
     for polyline in polylines:
-        if np.shape(polyline)[0] > polyline_noise_threshold:
-            plt.plot(polyline[:,0], polyline[:,1])
+        downsampled_polyline = douglas_peucker(polyline, epsilon)
+        downsampled_polylines.append(downsampled_polyline)
+
+    # plot polylines
+    polyline_noise_threshold = 10
+
+    # plot downsampled polylines
+    for polyline in downsampled_polylines:
+        plt.plot(polyline[:,0], polyline[:,1])
     plt.show()
 
+    polylines = downsampled_polylines
+
     if args.serial_port == "":
-        dump_to_gcode(args.gcode_path, polylines)
+        dump_to_gcode(args.gcode_path, polylines, polyline_noise_threshold)
     else:
         ser = serial.Serial(args.serial_port, 115200)
 
