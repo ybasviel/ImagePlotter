@@ -236,8 +236,8 @@ def remove_background(image):
     # セグメンテーションマスクを取得
     condition = np.stack((results.segmentation_mask,) * 3, axis=-1) > 0.5
     
-    # 背景を黒に設定
-    bg_image = np.zeros_like(image)
+    # 背景を白に設定
+    bg_image = np.full_like(image, 255)
     
     # マスクを適用
     result = np.where(condition, image, bg_image)
