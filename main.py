@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # ダウンサンプリング
     print("downsampling")
-    epsilon = 0.3
+    epsilon = 0.25
     downsampled_polylines = []
     for polyline in polylines:
         downsampled_polyline = douglas_peucker(polyline, epsilon)
