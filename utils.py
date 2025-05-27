@@ -181,7 +181,7 @@ def dump_to_gcode_str(polylines, polyline_noise_threshold = 10):
 
     return gcode
 
-def dump_to_gcode(filename:Path|str, polylines, polyline_noise_threshold = 10):
+def dump_to_gcode(filename:Path|str, polylines):
 
     gcode = dump_to_gcode_str(polylines)
     with open(filename, "w") as f:

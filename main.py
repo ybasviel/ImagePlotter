@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # ダウンサンプリング
     print("downsampling")
-    epsilon = 0.25
+    epsilon = 0.2
     downsampled_polylines = []
     for polyline in polylines:
         downsampled_polyline = douglas_peucker(polyline, epsilon)
@@ -85,15 +85,15 @@ if __name__ == "__main__":
     # plot polylines
     polyline_noise_threshold = 10
 
+    polylines = [polyline for polyline in downsampled_polylines if len(polyline) > polyline_noise_threshold]
+
     # plot downsampled polylines
-    for polyline in downsampled_polylines:
+    for polyline in polylines:
         plt.plot(polyline[:,0], polyline[:,1])
     plt.show()
 
-    polylines = downsampled_polylines
-
     if args.serial_port == "":
-        dump_to_gcode(args.gcode_path, polylines, polyline_noise_threshold)
+        dump_to_gcode(args.gcode_path, polylines)
     else:
         ser = serial.Serial(args.serial_port, 115200)
 
