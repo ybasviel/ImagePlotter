@@ -47,24 +47,48 @@ if __name__ == "__main__":
 
     if args.comfy != "":
         cv2.imshow("cropped original", image)
-        cv2.imwrite("tmp/raw.png", image)
-        image = comfyui_api.queue("tmp/raw.png", args.comfy, args.workflow)
-        Path("tmp/raw.png").unlink()
-    
-    image = resize_image_to_640(image)
+        while True:
+            cv2.imwrite("tmp/raw.png", image)
+            processed = comfyui_api.queue("tmp/raw.png", args.comfy, args.workflow)
+            Path("tmp/raw.png").unlink()
 
-    cv2.imshow("original", image)
+            processed = resize_image_to_640(processed)
+            cv2.imshow("original", processed)
 
-    edges = get_edges(image)
+            edges = get_edges(processed)
+            cv2.imshow("edge", edges)
 
-    print("cでキャンセル")
+            print("rで再実行 / cでキャンセル")
+            key = cv2.waitKey(0) & 0xFF
 
-    cv2.imshow("edge", edges)
-    key = cv2.waitKey(0) & 0xFF
+            if key == ord("r"):
+                cv2.destroyWindow("original")
+                cv2.destroyWindow("edge")
+                continue
 
-    if key == ord("c"):
-        exit()
-    cv2.destroyAllWindows()
+            if key == ord("c"):
+                exit()
+
+            # 確定
+            image = processed
+            break
+
+        cv2.destroyAllWindows()
+    else:
+        image = resize_image_to_640(image)
+
+        cv2.imshow("original", image)
+
+        edges = get_edges(image)
+
+        print("cでキャンセル")
+
+        cv2.imshow("edge", edges)
+        key = cv2.waitKey(0) & 0xFF
+
+        if key == ord("c"):
+            exit()
+        cv2.destroyAllWindows()
 
     print("convert edges to vec")
     polylines = edges2polylines(edges, 10, None)
