@@ -2,6 +2,7 @@ from comfy_api_simplified import ComfyApiWrapper, ComfyWorkflowWrapper
 import base64
 import cv2
 import os
+import random
 
 def queue(image_path:str, base_url = "http://127.0.0.1:8188/", workflow_path:str = "templates/i2i_face_api.json"):
 
@@ -14,6 +15,8 @@ def queue(image_path:str, base_url = "http://127.0.0.1:8188/", workflow_path:str
     wf = ComfyWorkflowWrapper(workflow_path)
 
     wf.set_node_param("Load Image (Base64)", "image",  base64_img.decode() )
+    wf.set_node_param("KSampler", "seed", random.randint(0, 1000000000000000000))
+
 
 
     results = api.queue_and_wait_images(wf, "Save Image")
