@@ -40,7 +40,6 @@ if __name__ == "__main__":
         #なにも指定がないときはカメラモード
         image = capture_image(args.camera_id)
 
-    image = crop_image_to_sq(image)
 
     image = remove_background(image)
 
